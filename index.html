@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markly — Bookmark Manager</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Google Fonts: Syne (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════
+       MODAL: Tambah / Edit Bookmark
+  ══════════════════════════════════════════ -->
+  <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Tambah Bookmark</h2>
+        <button class="modal-close" id="modal-close" aria-label="Tutup modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="input-title">Judul <span class="required">*</span></label>
+          <input type="text" id="input-title" placeholder="Contoh: MDN Web Docs" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="input-url">URL <span class="required">*</span></label>
+          <input type="url" id="input-url" placeholder="https://example.com" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="input-tags">Kategori / Tag</label>
+          <div class="tag-input-wrapper">
+            <div class="tag-chips" id="tag-chips"></div>
+            <input type="text" id="input-tags" placeholder="Ketik lalu tekan Enter atau koma" autocomplete="off" />
+          </div>
+          <p class="form-hint">Pisahkan dengan Enter atau tanda koma</p>
+        </div>
+        <div class="form-group">
+          <label for="input-notes">Catatan (opsional)</label>
+          <textarea id="input-notes" placeholder="Deskripsi singkat tentang link ini..." rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btn-cancel">Batal</button>
+        <button class="btn btn-primary" id="btn-save">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MODAL: Konfirmasi Hapus
+  ══════════════════════════════════════════ -->
+  <div id="confirm-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Hapus Bookmark?</h2>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-text">Tindakan ini tidak dapat dibatalkan. Bookmark <strong id="confirm-bookmark-name"></strong> akan dihapus permanen.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="confirm-cancel">Batal</button>
+        <button class="btn btn-danger" id="confirm-delete">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TOAST NOTIFICATION
+  ══════════════════════════════════════════ -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- ══════════════════════════════════════════
+       MAIN APP LAYOUT
+  ══════════════════════════════════════════ -->
+  <div class="app-shell">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5a2 2 0 00-2 2v16l9-4 9 4V5a2 2 0 00-2-2z"/></svg>
+        </div>
+        <span class="brand-name">Markly</span>
+      </div>
+
+      <!-- Tombol Tambah (sidebar) -->
+      <button class="btn btn-primary btn-add-main" id="btn-open-modal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Tambah Bookmark
+      </button>
+
+      <!-- Navigasi kategori -->
+      <nav class="sidebar-nav">
+        <p class="nav-label">Koleksi</p>
+        <ul class="nav-list" id="sidebar-categories">
+          <li class="nav-item active" data-category="all">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </span>
+            <span class="nav-text">Semua</span>
+            <span class="nav-count" id="count-all">0</span>
+          </li>
+        </ul>
+
+        <p class="nav-label" style="margin-top: 1.5rem;">Tag</p>
+        <ul class="nav-list" id="sidebar-tags"></ul>
+      </nav>
+
+      <!-- Footer sidebar -->
+      <div class="sidebar-footer">
+        <button class="sidebar-action" id="btn-export" title="Export JSON">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+        <button class="sidebar-action" id="btn-import" title="Import JSON">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import
+        </button>
+        <input type="file" id="import-file-input" accept=".json" hidden />
+        <!-- Dark mode toggle -->
+        <button class="theme-toggle" id="btn-theme" title="Toggle dark mode" aria-label="Toggle tema">
+          <span class="theme-icon theme-icon-dark">🌙</span>
+          <span class="theme-icon theme-icon-light">☀️</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT ── -->
+    <main class="main-content">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <h1 class="page-title" id="page-title">Semua Bookmark</h1>
+        </div>
+        <div class="topbar-right">
+          <!-- Search -->
+          <div class="search-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="search-input" class="search-input" placeholder="Cari bookmark... (Ctrl+K)" autocomplete="off" />
+            <button class="search-clear hidden" id="search-clear" aria-label="Hapus pencarian">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <!-- Sort -->
+          <div class="select-wrapper">
+            <select id="sort-select" class="sort-select" aria-label="Urutkan">
+              <option value="newest">Terbaru</option>
+              <option value="oldest">Terlama</option>
+              <option value="az">A → Z</option>
+              <option value="za">Z → A</option>
+            </select>
+          </div>
+          <!-- View toggle -->
+          <div class="view-toggle" role="group" aria-label="Pilih tampilan">
+            <button class="view-btn active" id="view-grid" data-view="grid" aria-pressed="true" title="Grid view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </button>
+            <button class="view-btn" id="view-list" data-view="list" aria-pressed="false" title="List view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Bookmark Grid/List -->
+      <div class="bookmarks-container">
+        <div class="bookmark-grid" id="bookmark-grid"></div>
+
+        <!-- Empty state -->
+        <div class="empty-state hidden" id="empty-state">
+          <div class="empty-illustration">
+            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="60" cy="60" r="50" fill="currentColor" opacity="0.06"/>
+              <path d="M45 35h30a5 5 0 015 5v45l-20-9-20 9V40a5 5 0 015-5z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="none" opacity="0.4"/>
+              <line x1="52" y1="52" x2="68" y2="52" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+              <line x1="52" y1="59" x2="64" y2="59" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+            </svg>
+          </div>
+          <h3 class="empty-title" id="empty-title">Belum ada bookmark</h3>
+          <p class="empty-desc" id="empty-desc">Klik tombol "Tambah Bookmark" untuk menyimpan link pertamamu.</p>
+          <button class="btn btn-primary" id="btn-empty-add">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah Bookmark
+          </button>
+        </div>
+      </div>
+
+      <!-- Keyboard shortcut hint -->
+      <div class="shortcut-hint" id="shortcut-hint">
+        <kbd>Ctrl</kbd>+<kbd>B</kbd> Tambah &nbsp;·&nbsp; <kbd>Ctrl</kbd>+<kbd>K</kbd> Cari &nbsp;·&nbsp; <kbd>Esc</kbd> Tutup
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
