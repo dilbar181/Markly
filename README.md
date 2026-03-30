@@ -93,30 +93,6 @@ Aplikasi ini memungkinkan kamu untuk menyimpan, mengelola, dan mengorganisasi bo
 
 ---
 
-## 🎨 Design System
-
-* Font:
-
-  * Plus Jakarta Sans (Heading)
-  * Inter (Body)
-* Theme:
-
-  * Dark Mode (default)
-  * Light Mode
-* Style:
-
-  * Minimal, Clean, Modern SaaS UI
-
----
-
-## 🧠 Arsitektur
-
-* State management sederhana (in-memory + LocalStorage)
-* Rendering berbasis DOM manipulation
-* Modular function (render, event, utils)
-
----
-
 ## 🚧 Roadmap (Next Features)
 
 * 🔄 UI
