@@ -38,19 +38,8 @@ Aplikasi ini memungkinkan kamu untuk menyimpan, mengelola, dan mengorganisasi bo
 ## 📸 Preview
 
 > UI modern dengan gaya minimal SaaS dashboard
+> <img width="1366" height="647" alt="image" src="https://github.com/user-attachments/assets/3a1c7b68-7f6f-488e-a07b-4d0318a2ca67" />
 
----
-
-## 📂 Struktur Project
-
-```
-markly/
-│
-├── index.html      # Struktur utama aplikasi
-├── style.css       # Styling & UI design
-├── script.js       # Logic aplikasi
-└── README.md
-```
 
 ---
 
