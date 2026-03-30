@@ -21,6 +21,8 @@ let editingId      = null;    // null = add mode, string = edit mode
 let pendingDeleteId = null;
 let tempTags       = [];      // tags in the modal form
 let dragSrcIdx     = null;    // drag-and-drop source index
+let manualTags     = [];
+let pendingDeleteTag = null; // 🔥 untuk simpan tag yang mau dihapus
 
 const STORAGE_KEY = 'markly_bookmarks_v2';
 const PREF_KEY    = 'markly_prefs';
@@ -83,6 +85,7 @@ const dom = {
   btnTheme:         document.getElementById('btn-theme'),
   sidebarToggle:    document.getElementById('sidebar-toggle'),
   sidebar:          document.getElementById('sidebar'),
+  tagSuggestions:   document.getElementById('tag-suggestions'),
   // Modal
   modalOverlay:     document.getElementById('modal-overlay'),
   modalTitle:       document.getElementById('modal-title'),
@@ -94,6 +97,11 @@ const dom = {
   inputTags:        document.getElementById('input-tags'),
   tagChips:         document.getElementById('tag-chips'),
   inputNotes:       document.getElementById('input-notes'),
+  tagModal:         document.getElementById('tag-modal'),
+  tagInput:         document.getElementById('tag-input'),
+  tagSave:          document.getElementById('tag-save'),
+  tagCancel:        document.getElementById('tag-cancel'),
+  tagClose:         document.getElementById('tag-close'),
   // Confirm modal
   confirmOverlay:   document.getElementById('confirm-overlay'),
   confirmCancel:    document.getElementById('confirm-cancel'),
@@ -155,8 +163,11 @@ function highlight(text, query) {
 /** Collect all unique tags from bookmarks */
 function allTags() {
   const set = new Set();
+
   bookmarks.forEach(b => b.tags.forEach(t => set.add(t)));
-  return [...set].sort((a,b) => a.localeCompare(b));
+  manualTags.forEach(t => set.add(t));
+
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 /** Tag color palette (deterministic) */
@@ -202,6 +213,38 @@ function getFilteredBookmarks() {
   return list;
 }
 
+function showTagSuggestions(query) {
+  const q = query.trim().toLowerCase();
+
+  if (!q) {
+    dom.tagSuggestions.classList.add('hidden');
+    return;
+  }
+
+  const tags = allTags().filter(t =>
+    t.toLowerCase().includes(q)
+  );
+
+  if (tags.length === 0) {
+    dom.tagSuggestions.classList.add('hidden');
+    return;
+  }
+
+  dom.tagSuggestions.innerHTML = tags.map(tag => `
+    <div class="suggest-item" data-tag="${tag}">${tag}</div>
+  `).join('');
+
+  dom.tagSuggestions.classList.remove('hidden');
+
+  dom.tagSuggestions.querySelectorAll('.suggest-item').forEach(el => {
+    el.addEventListener('click', () => {
+      addTag(el.dataset.tag);
+      dom.inputTags.value = '';
+      dom.tagSuggestions.classList.add('hidden');
+    });
+  });
+}
+
 /* ─────────────────────────────────────────
    5. RENDER
 ───────────────────────────────────────── */
@@ -227,10 +270,11 @@ function renderSidebar() {
     const color = tagColor(tag);
     const active = activeCategory === tag;
     return `
-      <li class="nav-item ${active ? 'active' : ''}" data-category="${escHtml(tag)}" role="button" tabindex="0">
+      <li class="nav-item ${active ? 'active' : ''}" data-category="${escHtml(tag)}">
         <span class="tag-dot" style="background:${color}"></span>
         <span class="nav-text">${escHtml(tag)}</span>
         <span class="nav-count">${count}</span>
+        <button class="delete-tag" data-tag="${escHtml(tag)}">×</button>
       </li>`;
   }).join('');
 
@@ -238,6 +282,14 @@ function renderSidebar() {
   dom.sidebarTags.querySelectorAll('.nav-item').forEach(el => {
     el.addEventListener('click', () => selectCategory(el.dataset.category));
     el.addEventListener('keydown', e => { if (e.key === 'Enter') selectCategory(el.dataset.category); });
+  });
+
+  // Delete tag
+  dom.sidebarTags.querySelectorAll('.delete-tag').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openConfirmTag(btn.dataset.tag);
+    });
   });
 }
 
@@ -374,6 +426,16 @@ function closeModal() {
   tempTags  = [];
 }
 
+function openTagModal() {
+  dom.tagModal.classList.remove('hidden');
+  dom.tagInput.value = '';
+  dom.tagInput.focus();
+}
+
+function closeTagModal() {
+  dom.tagModal.classList.add('hidden');
+}
+
 /** Save bookmark (add or edit) */
 function saveBookmark() {
   const title = dom.inputTitle.value.trim();
@@ -472,6 +534,14 @@ function openConfirm(id) {
 function closeConfirm() {
   dom.confirmOverlay.classList.add('hidden');
   pendingDeleteId = null;
+  pendingDeleteTag = null;
+}
+
+function openConfirmTag(tag) {
+  pendingDeleteTag = tag;
+
+  dom.confirmName.textContent = `"${tag}"`;
+  dom.confirmOverlay.classList.remove('hidden');
 }
 
 function deleteBookmark() {
@@ -656,23 +726,49 @@ function attachEvents() {
   dom.modalClose.addEventListener('click', closeModal);
   dom.btnCancel.addEventListener('click', closeModal);
   dom.modalOverlay.addEventListener('click', e => { if (e.target === dom.modalOverlay) closeModal(); });
+  document.getElementById('btn-add-tag').addEventListener('click', openTagModal); {
+  dom.tagSave.addEventListener('click', () => {
+    const tag = dom.tagInput.value;
+    
+    if (!tag) return;
+    
+    const clean = tag.trim().toLowerCase().replace(/\s+/g, '-');
+    
+    if (!manualTags.includes(clean)) {
+        manualTags.push(clean);
+        render();
+      }
+    
+      closeTagModal();
+    });
+    
+  dom.tagCancel.addEventListener('click', closeTagModal);
+  dom.tagClose.addEventListener('click', closeTagModal);  
+  };
 
   // ── Save ──
   dom.btnSave.addEventListener('click', saveBookmark);
 
   // ── Tag input ──
   dom.inputTags.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      addTag(dom.inputTags.value);
-    }
-    if (e.key === 'Backspace' && dom.inputTags.value === '' && tempTags.length > 0) {
-      tempTags.pop();
-      renderTagPills();
+    if (e.key === 'Enter') {
+      e.preventDefault(); // 🔥 penting
+  
+      const value = dom.inputTags.value.trim();
+  
+      if (!value) return;
+  
+      addTag(value);
+      dom.inputTags.value = '';
     }
   });
+  dom.inputTags.addEventListener('input', () => {
+    showTagSuggestions(dom.inputTags.value);
+  });
   dom.inputTags.addEventListener('blur', () => {
-    if (dom.inputTags.value.trim()) addTag(dom.inputTags.value);
+    setTimeout(() => {
+      dom.tagSuggestions.classList.add('hidden');
+    }, 200);
   });
 
   // ── Search ──
@@ -725,7 +821,26 @@ function attachEvents() {
 
   // ── Confirm delete ──
   dom.confirmCancel.addEventListener('click', closeConfirm);
-  dom.confirmDelete.addEventListener('click', deleteBookmark);
+  dom.confirmDelete.addEventListener('click', () => {
+    if (pendingDeleteTag) {
+      // 🔥 hapus tag
+      manualTags = manualTags.filter(t => t !== pendingDeleteTag);
+  
+      bookmarks.forEach(b => {
+        b.tags = b.tags.filter(t => t !== pendingDeleteTag);
+      });
+  
+      saveBookmarks();
+      pendingDeleteTag = null;
+  
+      closeConfirm();
+      render();
+      showToast('Tag dihapus', 'info');
+    } else {
+      // default hapus bookmark
+      deleteBookmark();
+    }
+  });
   dom.confirmOverlay.addEventListener('click', e => { if (e.target === dom.confirmOverlay) closeConfirm(); });
 
   // ── Enter to save in modal ──

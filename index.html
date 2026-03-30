@@ -35,7 +35,8 @@
           <label for="input-tags">Kategori / Tag</label>
           <div class="tag-input-wrapper">
             <div class="tag-chips" id="tag-chips"></div>
-            <input type="text" id="input-tags" placeholder="Ketik lalu tekan Enter atau koma" autocomplete="off" />
+            <input type="text" id="input-tags" placeholder="Ketik Tag" autocomplete="off" />
+            <div id="tag-suggestions" class="tag-suggestions hidden"></div>
           </div>
           <p class="form-hint">Pisahkan dengan Enter atau tanda koma</p>
         </div>
@@ -72,6 +73,27 @@
     </div>
   </div>
 
+<!-- ══════════════════════════════════════════
+       MODAL: Popup Tag
+  ══════════════════════════════════════════ -->
+  <div id="tag-modal" class="modal-overlay hidden">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Tambah Tag</h2>
+        <button id="tag-close" class="modal-close">✕</button>
+      </div>
+  
+      <div class="modal-body">
+        <input type="text" id="tag-input" placeholder="Masukkan nama tag..." />
+      </div>
+  
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="tag-cancel">Batal</button>
+        <button class="btn btn-primary" id="tag-save">Simpan</button>
+      </div>
+    </div>
+  </div>
+  
   <!-- ══════════════════════════════════════════
        TOAST NOTIFICATION
   ══════════════════════════════════════════ -->
@@ -110,7 +132,11 @@
           </li>
         </ul>
 
-        <p class="nav-label" style="margin-top: 1.5rem;">Tag</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
+          <p class="nav-label">Tag</p>
+          <button id="btn-add-tag">+</button>
+        </div>
+        
         <ul class="nav-list" id="sidebar-tags"></ul>
       </nav>
 
