@@ -367,7 +367,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
 .search-input::placeholder { color: var(--text-muted); }
 .search-input:focus {
   border-color: var(--accent);
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 0 0 2px var(--accent-dim);
   width: 280px;
 }
 
@@ -443,7 +443,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
 .bookmark-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 /* List view */
@@ -457,7 +457,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -480,7 +480,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
 .bookmark-card:hover {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: 0 0 0 2px var(--accent-dim);
 }
 .bookmark-card:hover::before { opacity: 1; }
 .bookmark-card.selected {
@@ -693,7 +693,7 @@ mark {
   user-select: none;
 }
 .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-.btn:active { transform: scale(0.97); }
+.btn:active { transform: scale(0.96); }
 
 .btn-primary {
   background: var(--accent);
@@ -882,6 +882,8 @@ mark {
 .delete-tag {
   background: transparent;
   border: none;
+  opacity:2 ;
+  transition: 0.2s;
   color: var(--text-muted);
   cursor: pointer;
   font-size: 12px;
@@ -889,6 +891,10 @@ mark {
 
 .delete-tag:hover {
   color: var(--danger);
+}
+
+.nav-item:hover .delete-tag {
+  opacity:1 ;
 }
 
 .tag-suggestions {
