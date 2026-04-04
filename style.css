@@ -600,7 +600,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: auto;
 }
 
 .card-tags {
