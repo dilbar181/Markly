@@ -322,7 +322,7 @@ function renderGrid() {
     ).join('');
 
     return `
-    <div class="bookmark-card" data-id="${b.id}" draggable="true" data-idx="${idx}">
+    <div class="bookmark-card" data-id="${b.id}" draggable="true" data-idx="${idx}" style="cursor: pointer;">
       <div class="card-header">
         <div class="card-favicon" id="favicon-${b.id}">
           ${faviconUrl
@@ -363,6 +363,18 @@ function renderGrid() {
   });
   dom.grid.querySelectorAll('.tag-chip').forEach(chip => {
     chip.addEventListener('click', e => { e.stopPropagation(); selectCategory(chip.dataset.tag); });
+  });
+
+  dom.grid.querySelectorAll('.card-link').forEach(link => {
+    link.addEventListener('click', e => { e.stopPropagation(); });
+  });
+
+  dom.grid.querySelectorAll('.bookmark-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const b = bookmarks.find(b => b.id === card.dataset.id);
+      if (b && b.url) window.open(b.url, '_blank');
+    });
   });
 
   // Drag & drop bindings
